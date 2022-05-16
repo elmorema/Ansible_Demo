@@ -1,0 +1,15 @@
+---
+- name: this is just a tester
+  hosts: all
+  remote_user: root
+  tasks:
+          - name: this is the hello world task
+            copy:
+                    content: hello world
+                    dest: /tmp/helloworld.txt
+          - name: cat the file
+            command: cat /tmp/helloworld.txt
+            register: output
+          - name: print
+            debug:
+                    msg: "{{output.stdout}}"

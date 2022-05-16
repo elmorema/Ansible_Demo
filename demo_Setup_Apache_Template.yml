@@ -1,0 +1,27 @@
+---
+- name: Setup apache
+  hosts: all
+  become: true
+  vars:
+          name: Mark
+          product: Ansible
+
+  tasks:
+          - name: The task to move it
+            template:
+                    src: hello_world.j2
+                    dest: /var/www/html/index.html
+                    mode: 0777
+          - name: start the service
+            service:
+                    name: httpd
+                    state: started
+          - name: open the port
+            firewalld:
+                    service: http
+                    permanent: true
+                    state: enabled
+          - name: restart the firewall
+            service: 
+                    name: firewalld
+                    state: restarted

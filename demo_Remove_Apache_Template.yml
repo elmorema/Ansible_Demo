@@ -1,0 +1,13 @@
+---
+- name: remove the apache
+  hosts: all
+  become: true
+  tasks:
+          - name: remove the apache server
+            yum:
+                    name: httpd
+                    state: absent
+          - name: Remove the index file
+            file:
+                    path: /var/www/html/index.html
+                    state: absent

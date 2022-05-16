@@ -1,0 +1,9 @@
+---
+- name: remove all the host files
+  become: true
+  hosts: all
+  tasks:
+          - name: remove the hosts files
+            file:
+                  path: /etc/hosts
+                  state: absent

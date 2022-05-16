@@ -1,0 +1,9 @@
+---
+- name: playbook that shifts the hosts
+  hosts: all
+  become: true
+  tasks:
+          - name: copy over the /etc/hosts file
+            copy:
+                    dest: /etc/hosts
+                    src: /etc/hosts

@@ -1,0 +1,12 @@
+---
+- name: make the Ansible users to access the machines
+  hosts: all
+  become: true
+  tasks:
+          - name: this will make the users
+            ansible.builtin.user:
+                    name: ansible
+                    password: redhat!
+                    generate_ssh_key: true
+                    append: true
+                    groups: wheel
