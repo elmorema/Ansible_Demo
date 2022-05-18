@@ -3,6 +3,11 @@
   hosts: all
   become: true
   tasks:
+          - name: this will remove the users
+            ansible.builtin.user:
+                    name: ansible
+                    state: absent
+                    remove: true
           - name: this will make the users
             ansible.builtin.user:
                     name: ansible
