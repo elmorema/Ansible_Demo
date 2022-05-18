@@ -11,7 +11,7 @@
           - name: this will make the users
             ansible.builtin.user:
                     name: ansible
-                    password: "redhat!"
+                    password: test
                     append: true
                     groups: wheel
                     state: present
