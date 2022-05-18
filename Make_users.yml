@@ -14,3 +14,4 @@
                     password: redhat!
                     append: true
                     groups: wheel
+                    state: present
