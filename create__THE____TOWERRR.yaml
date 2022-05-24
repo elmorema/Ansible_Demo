@@ -1,0 +1,60 @@
+---
+- name: installation of ansible automation platform
+    # Change the Host IP to whatever AAP 2.x platform it is going to be on
+  hosts: rhel
+  become: true
+  gather_facts: false
+
+  tasks:
+      # Downloads the AAP setup tar file !!!!!!!!!!!!Have to change the download when version changes!!!!!!!!!!
+      - name: Downloads the AAP setup tar file from Red Hat Online
+        get_url:
+          url: https://access.cdn.redhat.com/content/origin/files/sha256/31/31e4b2a4df47cd81fee8aa4280cb5e2217a7534289dc26a4e4354dab5c25f131/ansible-automation-platform-setup-2.1.0-1.tar.gz?user=6ba3ef3f9a54878a587e5053ede43c2a&_auth_=1653431832_9bb11661503f1518f4e71343601a47a4
+          # !!!!!!!!!Change the name of the destination when the download chnages!!!!!!!!!
+          dest: /home/melmore/Downloads/ansible-automation-platform-setup-2.1.0-1.tar.gz
+        
+        #Creates the directory for the tar file to be put into. !!!!!!!!!!!Have to change the name when version changes!!!!!!!!!!!!
+      - name: Create the directory for the tar file
+        ansible.builtin.file:
+          path: /home/melmore/Downloads/ansible-automation-platform-setup-2.1.0-1
+          state: directory
+          mode: '777'
+
+        #Unpacks the setup tar file
+      - name: Unpacks the setup tar file
+        raw: tar xvzf /home/melmore/Downloads/ansible-automation-platform-setup-2.1.0-1.tar.gz --directory /home/melmore/Downloads
+
+      - name: Subscribed the system with the ansible entitlement
+        community.general.packaging.os.redhat_subscription:
+          state: present
+          username: elmorema
+          password: Samiscool2!
+          pool_ids: 
+            - 8a85f99b7ed9423e017fad150a753ca3
+            - 8a85f99a7ed94227017fad15ed9b766a
+    
+        #Transfering the inventory file
+      - name: putting the inventory file from the github to the folder
+        get_url:
+          url: https://raw.githubusercontent.com/elmorema/Ansible_Demo/main/setup_inventory
+          dest: /home/melmore/Downloads/ansible-automation-platform-setup-2.1.0-1/inventory
+      
+      #Making sure Python 3.8 is installed
+      - name: install python 3.8      
+        yum:                          
+          name: python3               
+          state: present              
+      - name: install python virt-env 
+        yum:                          
+          name: python3-virtualenv    
+          state: present              
+      - name: install python3-pip     
+        yum:                          
+          name: python3-pip           
+          state: present
+
+        #Running the setup script
+      - name: Running the setup script with the arguments to upgrade ansible with controller and with the root access
+        command: ./setup.sh -e upgrade_ansible_with_tower=1
+        args:
+          chdir: /home/melmore/Downloads/ansible-automation-platform-setup-2.1.0-1/
