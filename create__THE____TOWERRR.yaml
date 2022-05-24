@@ -28,7 +28,7 @@
         community.general.packaging.os.redhat_subscription:
           state: present
           username: elmorema
-          password: Samiscool2!
+          password: *account password*
           pool_ids: 
             - 8a85f99b7ed9423e017fad150a753ca3
             - 8a85f99a7ed94227017fad15ed9b766a
