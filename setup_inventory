@@ -11,7 +11,7 @@ pg_port=''
 
 pg_database='awx'
 pg_username='awx'
-pg_password='redhat!'
+pg_password='redhat'
 
 registry_url='registry.redhat.io'
 registry_username='11009103|mark'
