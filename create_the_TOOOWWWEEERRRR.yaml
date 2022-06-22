@@ -1,0 +1,215 @@
+---
+- name: share the ssh keys
+  hosts: localhost
+  vars_prompt:  
+    - name: user
+      private: no
+      prompt: What user is the ssh key that you want to share in order to automate?
+
+    - name: ip
+      private: no
+      prompt: What is the ip address of the system you're wanting to ssh to?
+
+    - name: remote_user
+      private: no
+      prompt: What user do you want the keys to be added to on the remote host?
+
+    - name: inventory_path
+      private: no
+      prompt: What is the folder which the inventory file for this ansible playbook is in
+
+
+  become: true
+  gather_facts: false
+  tasks:
+    - name: share the ssh keys with the new host
+      ansible.builtin.raw: sshpass -p password ssh-copy-id -i /home/{{user}}/.ssh/id_rsa.pub -o StrictHostKeyChecking=no {{remote_user}}@{{ip}}
+
+    - name: put the ip address in the inventory file for the controller
+      ansible.builtin.copy:
+        dest: "{{inventory_path}}/inventory"
+        content: |
+          [rhel]
+          {{ip}}
+
+ 
+- name: installation of ansible automation platform
+  # Change the Host IP to whatever AAP 2.x platform it is going to be on
+  hosts: rhel
+  vars_prompt:
+    
+    - name: url
+      private: no
+      prompt: Get the download url for the ansible setup bundle from access.redhat.com
+
+    - name: version
+      private: no
+      prompt: |
+        Which version of Ansible 2.0 did you download? 
+        '1' for AAP 2.1.0
+        '2' for AAP 2.1.1
+        '3' for AAP 2.1.2
+        '4' for AAP 2.2 
+
+    - name: username
+      private: no
+      prompt: What is the username for the Red Hat account that you want to register to?
+
+    - name: password
+      prompt: What is the password for the Red Hat account that you want to register to? (Will be hidden)
+
+    - name: ansible_pool
+      prompt: What is the pool id for the ansible automation platform subscription? (put 0 if already subbed)
+      private: no
+
+    - name: rhel_pool
+      private: no
+      prompt: What is the pool id for the rhel subscription? (put 0 if already subbed)
+
+    - name: automation_hub
+      private: no
+      prompt: |
+        Are you...
+        '1' Not installing Automation Hub
+        '2' Installing Automation Hub w/ external database
+        '3' Installing Automation Hub w/ datase on Controller
+    
+#    - name: controller_ip
+ #     private: no
+  #    prompt: What is the IP address of the controller machine?
+
+      
+   
+  become: true
+  gather_facts: false
+  vars:
+    path: "did not work"
+  tasks:
+      
+     
+      - name: Get the IP address for the automation hub, if applicable
+        ansible.builtin.pause:
+          prompt: "What is the IP address of the automation hub machine?"
+        register: prompt
+        no_log: yes
+        run_once: yes
+        when: "{{automation_hub}} != 1"
+
+            
+      - name: Get the IP address for the automation hub, if applicable
+        ansible.builtin.pause:
+          prompt: "What is the IP address of the automation hub machine?"
+        register: prompt
+        no_log: yes
+        run_once: yes
+        when: "{{automation_hub}} != 1"
+
+      
+
+      #Creates the default folders for when a user is created 
+      #NEED the Downloads folder, dont need the Desktop
+      - name: create the default folders in /etc/skel
+        file:
+          path: "{{item}}"
+          state: directory
+        with_items:
+          - /etc/skel/Downloads
+          - /etc/skel/Desktop
+      
+      # Adds the ansible user so that it has a place to put the tar file
+      - name: add the Ansible User
+        ansible.builtin.user:
+          name: ansible
+          state: present
+          password: password
+
+      # Downloads the AAP setup tar file
+      - name: Downloads the AAP setup tar file from Red Hat Online
+        get_url:
+          url: "{{url}}"
+          dest: /home/ansible/Downloads/
+      
+      # Figures out the file path based on the version that was inputted
+      - name: AAP 2.1.0.1
+        set_fact: 
+          path: "/home/ansible/Downloads/ansible-automation-platform-setup-2.1.0-1"
+        when: "{{version}} == 1"
+
+      - name: AAP 2.1.1.1
+        set_fact: 
+          path: "/home/ansible/Downloads/ansible-automation-platform-setup-2.1.1-1"
+        when: "{{version}} == 2"
+
+      - name: AAP 2.1.2.1
+        set_fact: 
+          path: "/home/ansible/Downloads/ansible-automation-platform-setup-2.1.2-1"                        
+        when: "{{version}} == 3"
+
+      - name: AAP 2.1.0.5
+        set_fact: 
+          path: "/home/ansible/Downloads/ansible-automation-platform-setup-2.2.0-5"                        
+        when: "{{version}} == 4"
+
+  
+      # Creates the directory for the tar file to be put into.
+      - name: Create the directory for the tar file
+        ansible.builtin.file:
+          path: "{{path}}"
+          state: directory
+          mode: '777'
+
+      # Unpacks the setup tar file
+      - name: Unpacks the setup tar file
+        raw: "tar xvzf {{path}}.tar.gz --directory /home/ansible/Downloads"
+
+      - name: Subscribed the system with the ansible entitlement
+        community.general.packaging.os.redhat_subscription:
+          state: present
+          username: "{{username}}"
+          password: "{{password}}"
+          force_register: yes
+          pool_ids: 
+            - "{{ansible_pool}}"
+            - "{{rhel_pool}}"
+        when: 
+          - ansible_pool != 0 
+          - rhel_pool != 0
+    
+      # Transfering the inventory file from the github repo
+      - name: putting the inventory file, that is only for automation hub, from github to the folder
+        get_url:
+          url: https://raw.githubusercontent.com/elmorema/Ansible_Demo/main/setup_inventory_1
+          dest: "{{path}}/inventory"
+        when: "{{automation_hub}} == 1"
+
+      - name: putting the inventory file, that has external database, from the github to the folder
+        get_url:                       
+          url: https://raw.githubusercontent.com/elmorema/Ansible_Demo/main/setup_inventory_2
+          dest: "{{path}}/inventory"
+        when: "{{automation_hub}} == 2"
+
+      - name: putting the inventory file, external database in controller, from the github to the folder
+        get_url:                       
+          url: https://raw.githubusercontent.com/elmorema/Ansible_Demo/main/setup_inventory_3
+          dest: "{{path}}/inventory"
+        when: "{{automation_hub}} == 3"
+
+      # Making sure Python 3.8 is installed
+      - name: install python 3.8      
+        yum:                          
+          name: python3               
+          state: present              
+      - name: install python virt-env 
+        yum:                          
+          name: python3-virtualenv    
+          state: present              
+      - name: install python3-pip     
+        yum:                          
+          name: python3-pip           
+          state: present
+
+      # Running the setup script
+      - name: Running the setup script with the arguments to upgrade ansible with controller and with the root access
+        command: ./setup.sh -e upgrade_ansible_with_tower=1
+        args:
+          chdir: "{{path}}/" 
